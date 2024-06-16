@@ -42,9 +42,11 @@ func main() {
 		log.Fatalf("Failed to get skb-accepting functions: %s", err)
 	}
 
-	addr2name, _, err := dust.ParseKallsyms(funcs, false)
+	addr2name, _, err := dust.ParseKallsyms(funcs, true)
 	if err != nil {
 		log.Fatalf("Failed to parse Kallsyms: %s", err)
+	} else {
+		log.Printf("Parsed Kallsyms: %d syms\n", len(addr2name.Addr2NameMap))
 	}
 
 	var bpfSpec *ebpf.CollectionSpec
@@ -119,7 +121,7 @@ func main() {
 
 	log.Println("Listening for events..")
 
-	output, err := dust.NewOutput(nil, nil, nil, addr2name, false, btfSpec)
+	output, err := dust.NewOutput(addr2name, false)
 	if err != nil {
 		log.Fatalf("Failed to create output: %s", err)
 	}

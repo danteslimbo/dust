@@ -4,29 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"runtime"
-	"syscall"
 	"time"
 
-	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/btf"
 	"github.com/tklauser/ps"
 )
 
 const absoluteTS string = "15:04:05.000"
 
 type output struct {
-	lastSeenSkb    map[uint64]uint64 // skb addr => last seen TS
-	printSkbMap    *ebpf.Map
-	printShinfoMap *ebpf.Map
-	printStackMap  *ebpf.Map
-	addr2name      Addr2Name
-	writer         *os.File
-	kprobeMulti    bool
-	kfreeReasons   map[uint64]string
-	ifaceCache     map[uint64]map[uint32]string
+	addr2name    Addr2Name
+	writer       *os.File
+	kprobeMulti  bool // TODO
+	kfreeReasons map[uint64]string
+	ifaceCache   map[uint64]map[uint32]string
 }
 
 // outputStructured is a struct to hold the data for the json output
@@ -55,26 +47,17 @@ type jsonTuple struct {
 	Proto uint8  `json:"proto,omitempty"`
 }
 
-func NewOutput(printSkbMap, printShinfoMap, printStackMap *ebpf.Map, addr2Name Addr2Name, kprobeMulti bool, btfSpec *btf.Spec) (*output, error) {
+func NewOutput(addr2Name Addr2Name, kprobeMulti bool) (*output, error) {
 	writer := os.Stdout
-
-	//reasons, err := getKFreeSKBReasons(btfSpec)
-	//if err != nil {
-	//	log.Printf("Unable to load packet drop reaons: %v", err)
-	//}
 
 	var ifs map[uint64]map[uint32]string
 
 	return &output{
-		lastSeenSkb:    map[uint64]uint64{},
-		printSkbMap:    printSkbMap,
-		printShinfoMap: printShinfoMap,
-		printStackMap:  printStackMap,
-		addr2name:      addr2Name,
-		writer:         writer,
-		kprobeMulti:    kprobeMulti,
-		kfreeReasons:   nil,
-		ifaceCache:     ifs,
+		addr2name:    addr2Name,
+		writer:       writer,
+		kprobeMulti:  kprobeMulti,
+		kfreeReasons: nil,
+		ifaceCache:   ifs,
 	}, nil
 }
 
@@ -114,10 +97,6 @@ func getAbsoluteTs() string {
 	return time.Now().Format(absoluteTS)
 }
 
-func getRelativeTs(event *Event, o *output) uint64 {
-	return 0 // TODO
-}
-
 func getExecName(pid int) string {
 	p, err := ps.FindProcess(pid)
 	execName := fmt.Sprintf("<empty>:(%d)", pid)
@@ -140,23 +119,19 @@ func getAddrByArch(event *Event, o *output) (addr uint64) {
 	return addr
 }
 
-func getTupleData(event *Event) (tupleData string) {
-	return "" // TODO
-}
-
-func getStackData(event *Event, o *output) (stackData string) {
-	return // TODO
-}
-
 func (o *output) Print(event *Event) {
 
 	_, _ = fmt.Fprintf(o.writer, "%12s ", getAbsoluteTs())
 
 	execName := getExecName(int(event.PID))
 
-	fmt.Fprintf(o.writer, "0x%x,%16s %24s",
+	addr := getAddrByArch(event, o)
+	funcName := getOutFuncName(o, addr)
+
+	fmt.Fprintf(o.writer, "%d,  0x%x, %16s, %24s",
+		event.Timestamp,
 		event.Req,
-		fmt.Sprintf("[%s]", execName), "")
+		fmt.Sprintf("[%s]", execName), funcName)
 
 	fmt.Fprintln(o.writer)
 }
@@ -170,28 +145,18 @@ func (o *output) getIfaceName(netnsInode, ifindex uint32) string {
 	return fmt.Sprintf("%d", ifindex)
 }
 
-func protoToStr(proto uint8) string {
-	switch proto {
-	case syscall.IPPROTO_TCP:
-		return "tcp"
-	case syscall.IPPROTO_UDP:
-		return "udp"
-	case syscall.IPPROTO_ICMP:
-		return "icmp"
-	case syscall.IPPROTO_ICMPV6:
-		return "icmp6"
-	default:
-		return ""
+func getOutFuncName(o *output, addr uint64) string {
+	var funcName string
+	if ksym, ok := o.addr2name.Addr2NameMap[addr]; ok {
+		funcName = ksym.name
+	} else if ksym, ok := o.addr2name.Addr2NameMap[addr-4]; runtime.GOARCH == "amd64" && ok {
+		// Assume that function has ENDBR in its prelude (enabled by CONFIG_X86_KERNEL_IBT).
+		// See https://lore.kernel.org/bpf/20220811091526.172610-5-jolsa@kernel.org/
+		// for more ctx.
+		funcName = ksym.name
+	} else {
+		funcName = fmt.Sprintf("0x%x", addr)
 	}
-}
 
-func addrToStr(proto uint16, addr [16]byte) string {
-	switch proto {
-	case syscall.ETH_P_IP:
-		return net.IP(addr[:4]).String()
-	case syscall.ETH_P_IPV6:
-		return fmt.Sprintf("[%s]", net.IP(addr[:]).String())
-	default:
-		return ""
-	}
+	return funcName
 }

@@ -27,7 +27,6 @@ type Kprobe struct {
 func attachKprobes(ctx context.Context, bar *pb.ProgressBar, kprobes []Kprobe) (links []link.Link, ignored int, err error) {
 	links = make([]link.Link, 0, len(kprobes))
 	for _, kprobe := range kprobes {
-		fmt.Printf("kprobe %s\n", kprobe.hookFunc)
 		select {
 		case <-ctx.Done():
 			return
