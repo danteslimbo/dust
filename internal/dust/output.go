@@ -128,9 +128,10 @@ func (o *output) Print(event *Event) {
 	addr := getAddrByArch(event, o)
 	funcName := getOutFuncName(o, addr)
 
-	fmt.Fprintf(o.writer, "%d,  0x%x, %16s, %24s",
+	fmt.Fprintf(o.writer, "%d,  0x%x, %d, %16s, %24s",
 		event.Timestamp,
 		event.Req,
+		event.PID,
 		fmt.Sprintf("[%s]", execName), funcName)
 
 	fmt.Fprintln(o.writer)

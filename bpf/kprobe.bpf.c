@@ -4,6 +4,13 @@
 #include "bpf/bpf_tracing.h"
 #include "bpf/bpf_ipv6.h"
 
+struct config {
+  u32 pid;
+}  __attribute__((packed));
+
+static volatile const struct config CFG;
+#define cfg (&CFG)
+
 struct event_t {
   u32 pid;
   u32 cpu_id;
@@ -62,6 +69,11 @@ dust_ADD_KPROBE(5)
 
 SEC("kretprobe/alloc_request")
 int BPF_KRETPROBE(alloc, u64 req) {
+  if (cfg->pid > 0 && bpf_get_current_pid_tgid() >> 32 != cfg->pid) {
+    bpf_printk("cfg->pid %d, pid %d\n", cfg->pid, bpf_get_current_pid_tgid() >> 32);
+    return BPF_OK;
+  }
+
   u32 val = 1;
   bpf_map_update_elem(&request_map, &req, &val, BPF_ANY);
 
