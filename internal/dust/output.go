@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/TwiN/go-color"
 	"github.com/tklauser/ps"
 )
 
@@ -120,21 +121,19 @@ func getAddrByArch(event *Event, o *output) (addr uint64) {
 }
 
 func (o *output) Print(event *Event) {
-
 	_, _ = fmt.Fprintf(o.writer, "%12s ", getAbsoluteTs())
 
 	execName := getExecName(int(event.PID))
-
 	addr := getAddrByArch(event, o)
 	funcName := getOutFuncName(o, addr)
 
-	fmt.Fprintf(o.writer, "%d,  0x%x, %d, %16s, %24s",
+	line := color.Colorize(chooseColor(event.Req), fmt.Sprintf(
+		"%d,  0x%x, %d, %16s, %24s",
 		event.Timestamp,
 		event.Req,
 		event.PID,
-		fmt.Sprintf("[%s]", execName), funcName)
-
-	fmt.Fprintln(o.writer)
+		fmt.Sprintf("[%s]", execName), funcName))
+	_, _ = fmt.Fprintln(o.writer, line)
 }
 
 func (o *output) getIfaceName(netnsInode, ifindex uint32) string {
@@ -160,4 +159,22 @@ func getOutFuncName(o *output, addr uint64) string {
 	}
 
 	return funcName
+}
+
+var colors = []string{
+	color.Black,
+	color.Red,
+	color.Green,
+	color.Yellow,
+	color.Blue,
+	color.Purple,
+	color.Cyan,
+	color.Gray,
+	color.White,
+}
+
+var numColors = uint64(len(colors))
+
+func chooseColor(req uint64) string {
+	return colors[int(req%numColors)]
 }
