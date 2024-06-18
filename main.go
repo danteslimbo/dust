@@ -17,7 +17,7 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 	"golang.org/x/sys/unix"
 
-	"github.com/ZhangYet/dust/internal/dust"
+	"github.com/danteslimbo/dust/internal/dust"
 )
 
 func main() {

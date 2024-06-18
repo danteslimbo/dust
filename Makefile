@@ -11,4 +11,4 @@ dust: *.go */*/*.go bpf/*.c
 	TARGET_GOARCH=$(TARGET_GOARCH) $(GO_GENERATE)
 	CC=$(CC) GOARCH=$(TARGET_GOARCH) $(GO_BUILD) $(if $(GO_TAGS),-tags $(GO_TAGS)) \
     		-ldflags "-w -s \
-    		-X 'github.com/ZhangYet/dust/internal/dust.Version=${VERSION}'"
+    		-X 'github.com/danteslimbo/dust/internal/dust.Version=${VERSION}'"

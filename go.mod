@@ -1,4 +1,4 @@
-module github.com/ZhangYet/dust
+module github.com/danteslimbo/dust
 
 go 1.21.0
 
