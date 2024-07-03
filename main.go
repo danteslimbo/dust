@@ -143,7 +143,7 @@ func main() {
 
 	log.Println("Listening for events..")
 
-	output, err := dust.NewOutput(addr2name, false)
+	output, err := dust.NewOutput(addr2name, false, flags.Ofile)
 	if err != nil {
 		log.Fatalf("Failed to create output: %s", err)
 	}

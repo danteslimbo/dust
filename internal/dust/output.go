@@ -20,6 +20,7 @@ type output struct {
 	kprobeMulti  bool // TODO
 	kfreeReasons map[uint64]string
 	ifaceCache   map[uint64]map[uint32]string
+	ofile        string
 }
 
 // outputStructured is a struct to hold the data for the json output
@@ -48,8 +49,15 @@ type jsonTuple struct {
 	Proto uint8  `json:"proto,omitempty"`
 }
 
-func NewOutput(addr2Name Addr2Name, kprobeMulti bool) (*output, error) {
+func NewOutput(addr2Name Addr2Name, kprobeMulti bool, ofile string) (*output, error) {
 	writer := os.Stdout
+	if ofile != "" {
+		var err error
+		writer, err = os.OpenFile(ofile, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	var ifs map[uint64]map[uint32]string
 
@@ -70,8 +78,6 @@ func (o *output) Close() {
 }
 
 func (o *output) PrintHeader() {
-	// TODO
-
 }
 
 // PrintJson prints the event in JSON format
