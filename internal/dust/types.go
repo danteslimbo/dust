@@ -21,6 +21,7 @@ type Flags struct {
 
 	Pid      uint32
 	Interval uint32
+	Ofile    string
 }
 
 func (f *Flags) SetFlags() {
@@ -28,6 +29,7 @@ func (f *Flags) SetFlags() {
 	flag.BoolVarP(&f.ShowHelp, "help", "h", false, "show help")
 	flag.Uint32VarP(&f.Interval, "interval", "i", 10, "set monitor time in seconds")
 	flag.Uint32VarP(&f.Pid, "pid", "p", 0, "filter pid")
+	flag.StringVarP(&f.Ofile, "ofile", "o", "", "output file")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stderr, "Usage: %s [options] \n", os.Args[0])

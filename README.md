@@ -13,6 +13,7 @@ Usage: ./dust [options]
     Available options:
   -h, --help              show help
   -i, --interval uint32   set monitor time in seconds (default 10)
+  -o, --ofile string      output file
   -p, --pid uint32        filter pid
   -v, --version           show version
 ```
@@ -24,4 +25,4 @@ sudo ./dust -p {the_process_you_want_to_trace} -i 30
 ## TODO
 - [ ] kprobe filters.
 - [ ] kprobe.multi supports.
-- [ ] output to files.
+- [x] output to files.
