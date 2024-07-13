@@ -152,6 +152,9 @@ func (o *output) getIfaceName(netnsInode, ifindex uint32) string {
 }
 
 func getOutFuncName(o *output, addr uint64) string {
+	if addr == uint64(0xffffffffffffffff) {
+		return "blk_mq_alloc_request"
+	}
 	var funcName string
 	if ksym, ok := o.addr2name.Addr2NameMap[addr]; ok {
 		funcName = ksym.name
