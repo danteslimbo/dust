@@ -78,7 +78,7 @@ int BPF_KRETPROBE(alloc, u64 req) {
   bpf_map_update_elem(&request_map, &req, &val, BPF_ANY);
 
   struct event_t event = {};
-  event.addr = PT_REGS_IP(ctx);
+  event.addr = 0;
   event.pid = bpf_get_current_pid_tgid() >> 32;
   event.ts = bpf_ktime_get_ns();
   event.cpu_id = bpf_get_smp_processor_id();
