@@ -34,6 +34,13 @@ struct {
   __uint(max_entries, MAX_TRACK_SIZE);
 } request_map SEC(".maps");
 
+struct {
+  __uint(type, BPF_MAP_TYPE_HASH);
+  __type(key, u64);
+  __type(value, u32);
+  __uint(max_entries, MAX_TRACK_SIZE);
+} frame_ip SEC(".maps");
+
 static __always_inline int
 kprobe_request(struct request* req, struct pt_regs* ctx) {
   struct event_t event = {};
@@ -47,6 +54,9 @@ kprobe_request(struct request* req, struct pt_regs* ctx) {
   event.ts = bpf_ktime_get_ns();
   event.cpu_id = bpf_get_smp_processor_id();
   event.req = key;
+
+  u64 frame_base = PT_REGS_SP(ctx) + 8;
+  bpf_map_update_elem(&frame_ip, &frame_base, &event.addr, BPF_ANY);
 
   bpf_map_push_elem(&events, &event, BPF_EXIST);
   return BPF_OK;
@@ -78,12 +88,16 @@ int BPF_KRETPROBE(alloc, u64 req) {
   bpf_map_update_elem(&request_map, &req, &val, BPF_ANY);
 
   struct event_t event = {};
-  event.addr = 0;
   event.pid = bpf_get_current_pid_tgid() >> 32;
   event.ts = bpf_ktime_get_ns();
   event.cpu_id = bpf_get_smp_processor_id();
   event.req = (u64)req;
   bpf_map_push_elem(&events, &event, BPF_EXIST);
+
+  u64 frame_base = PT_REGS_SP(ctx);
+  u64 *ip = bpf_map_lookup_elem(&frame_ip, &frame_base);
+  if (ip)
+	  event.addr = *ip;
 
   return BPF_OK;
 }
